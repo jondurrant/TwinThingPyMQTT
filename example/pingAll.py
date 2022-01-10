@@ -13,7 +13,8 @@ ping_topic = "GRP/ALL/TPC/PING"
 connected_topic = "TNG/" + user + "/LC/ON"
 disconnected_topic = "TNG/" + user + "/LC/OFF"
 
-pong_topic = "TNG/" + targetId + "/TPC/PONG"
+#pong_topic = "TNG/" + targetId + "/TPC/PONG"
+pong_topic = "TNG/+/TPC/PONG"
 lc_topic = "TNG/" + targetId + "/LC/#"
 
 # The callback for when the client receives a CONNACK response from the server.
