@@ -1,6 +1,5 @@
 
 
-
 MQTT_TOPIC_THING_HEADER="TNG"
 MQTT_TOPIC_HEADER="TPC"
 MQTT_TOPIC_LIFECYCLE="LC"
@@ -15,6 +14,9 @@ MQTT_STATE_TOPIC_SET="SET"
 MQTT_TOPIC_PING="PING"
 MQTT_TOPIC_PONG="PONG"
 MQTT_GRP_ALL="ALL"
+MQTT_TWIN_TOPIC="TWIN"
+MQTT_STATE_TOPIC_RESULT="RES"
+
 
 
 
@@ -82,4 +84,34 @@ def getThingSet(id: str):
     return ("%s/%s/%s/%s"%(MQTT_TOPIC_THING_HEADER, id,
                  MQTT_STATE_TOPIC, MQTT_STATE_TOPIC_SET))
     
+   
+   
+def getTwinGet(id: str):
+    return ("%s/%s/%s/%s"%(MQTT_TOPIC_THING_HEADER, id,
+                 MQTT_TWIN_TOPIC, MQTT_STATE_TOPIC_GET))
+
+def getTwinSet(id: str):
+    return ("%s/%s/%s/%s"%(MQTT_TOPIC_THING_HEADER, id,
+                 MQTT_TWIN_TOPIC, MQTT_STATE_TOPIC_SET))
+    
+def getTwinUpdate(id: str):
+    return ("%s/%s/%s/%s"%(MQTT_TOPIC_THING_HEADER, id,
+                 MQTT_TWIN_TOPIC, MQTT_STATE_TOPIC_UPDATE))
+    
+def getTwinResult(id: str):
+    return ("%s/%s/%s/%s"%(MQTT_TOPIC_THING_HEADER, id,
+                 MQTT_TWIN_TOPIC, MQTT_STATE_TOPIC_RESULT))
+    
+    
+def topicEquals(wild: str, fill: str):
+    w = wild.split("/")
+    f = fill.split("/")
+    for i in range(len(w)):
+        if (i < len(f)):
+            if (w[i] == "#"):
+                return True
+            if (w[i] != "+"):
+                if (w[i] != f[i]):
+                    return False
+    return True
     

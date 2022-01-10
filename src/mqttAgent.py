@@ -49,7 +49,7 @@ class MQTTAgent(mqtt.Client):
         self.xMqttTarget = mqttTarget
         self.xMqttPort = mqttPort
         self.xReconnect = recon
-        self.username_pw_set(username=self.xMqttUser, password=self.xMqttUser)
+        self.username_pw_set(username=self.xMqttUser, password=self.xMqttPwd)
         #self.start()
         
     def start(self):

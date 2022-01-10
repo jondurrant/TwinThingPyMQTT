@@ -34,5 +34,32 @@ class TopicHelperTests(unittest.TestCase):
         topic = helper.genGroupTopic("ALL", "PING")
         self.assertEqual(topic, "GRP/ALL/TPC/PING")
         
+        
+    def testTwin(self):
+        topic = helper.getTwinGet(id)
+        self.assertEqual(topic, "TNG/"+id+"/TWIN/GET")
+        topic = helper.getTwinSet(id)
+        self.assertEqual(topic, "TNG/"+id+"/TWIN/SET")
+        topic = helper.getTwinUpdate(id)
+        self.assertEqual(topic, "TNG/"+id+"/TWIN/UPD")
+        topic = helper.getTwinResult(id)
+        self.assertEqual(topic, "TNG/"+id+"/TWIN/RES")
+        
+    def testTopicEquals(self):
+        self.assertEqual(helper.topicEquals("TNG/foo/STATE/GET", "TNG/foo/STATE/GET"), True)
+        self.assertEqual(helper.topicEquals("TNG/foo/STATE/GET", "TNG/foo/STATE/SET"), False)
+        
+        self.assertEqual(helper.topicEquals("TNG/foo/STATE/#", "TNG/foo/STATE/GET"), True)
+        self.assertEqual(helper.topicEquals("TNG/foo/STATE/#", "TNG/Jim/STATE/SET"), False)
+        
+        self.assertEqual(helper.topicEquals("TNG/foo/#", "TNG/foo/STATE/GET"), True)
+        self.assertEqual(helper.topicEquals("TNG/foo/#", "TNG/Jim/STATE/SET"), False)
+        
+        self.assertEqual(helper.topicEquals("TNG/+/STATE/GET", "TNG/foo/STATE/GET"), True)
+        self.assertEqual(helper.topicEquals("TNG/foo/+/GET", "TNG/foo/STATE/GET"), True)
+        self.assertEqual(helper.topicEquals("TNG/foo/+/GET", "TNG/foo/STATE/SET"), False)
+        self.assertEqual(helper.topicEquals("TNG/foo/STATE/+", "TNG/foo/STATE/SET"), True)
+        self.assertEqual(helper.topicEquals("TNG/foo/STATE/+", "TNG/jim/STATE/SET"), False)
+        
 if __name__ == '__main__':
     unittest.main()
