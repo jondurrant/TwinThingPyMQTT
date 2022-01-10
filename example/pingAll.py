@@ -9,7 +9,7 @@ port = 1883
 user = "super"
 passwd = "test"
 
-ping_topic = "TNG/" + targetId + "/TPC/PING"
+ping_topic = "GRP/ALL/TPC/PING"
 connected_topic = "TNG/" + user + "/LC/ON"
 disconnected_topic = "TNG/" + user + "/LC/OFF"
 

@@ -1,5 +1,7 @@
 from mqttAgent import  MQTTAgent
 import logging
+from mqttObserver import MQTTObserver
+from mqttRouterPing import MQTTRouterPing
 
 logging.basicConfig(level="DEBUG")
 
@@ -9,11 +11,14 @@ mqttTarget="nas3"
 mqttPort=1883
 
 
+mqttObs = MQTTObserver()
+mqttRouter = MQTTRouterPing(mqttUser)
 
 mqttAgent = MQTTAgent(mqttUser)
 mqttAgent.credentials(mqttUser, mqttPwd)
 mqttAgent.mqttHub(mqttTarget, mqttPort, True)
-
+mqttAgent.addObserver(mqttObs)
+mqttAgent.addRouter(mqttRouter)
 
 mqttAgent.start()
 
