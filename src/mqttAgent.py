@@ -1,0 +1,84 @@
+#===============================================================================
+# MQTT Agent - Manage connection and routing of messages with MQTT Hub
+#===============================================================================
+
+import paho.mqtt.client as mqtt
+import json
+import time
+import logging
+import mqttTopicHelper as topicHelper
+
+#===============================================================================
+# MQTT Agent Class
+#===============================================================================
+class MQTTAgent(mqtt.Client):
+    
+    #===========================================================================
+    # Constructor
+    #===========================================================================
+    def __init__(self, client_id):
+        super().__init__(client_id)
+        self.xMqttUser = ""
+        self.xMqttPwd = ""
+        self.xDiconnectedTopic=""
+        self.xConnectedTopic=""
+        self.xMqttTarget = ""
+        self.xMqttPort = 1883
+        self.xReconnect = False
+        self.xLogging = logging.getLogger(__name__)
+        
+        self.xDiconnectedTopic = topicHelper.genLifeCycleTopic(
+            client_id, topicHelper.MQTT_TOPIC_LIFECYCLE_OFFLINE)
+        self.xConnectedTopic = topicHelper.genLifeCycleTopic(
+            client_id, topicHelper.MQTT_TOPIC_LIFECYCLE_ONLINE)
+
+        
+    #===========================================================================
+    # Define credentials
+    #===========================================================================
+    def credentials(self, mqttUser : str, mqttPwd : str):
+        self.xMqttUser = mqttUser
+        self.xMqttPwd = mqttPwd
+        
+    
+    def mqttHub(self, mqttTarget: str, mqttPort: int, recon: bool):
+        self.xMqttTarget = mqttTarget
+        self.xMqttPort = mqttPort
+        self.xReconnect = recon
+        self.username_pw_set(username=self.xMqttUser, password=self.xMqttUser)
+        #self.start()
+        
+    def start(self):
+        self.doConnect()
+        
+        #self.client.loop_start()
+        self.loop_forever()
+     
+    def doConnect(self):
+        j = {'online':0}
+        p = json.dumps(j)
+        self.will_set(self.xDiconnectedTopic, p, qos=1, retain=False) #set will  
+        self.connect(self.xMqttTarget, self.xMqttPort, 60)
+        
+        j = {'online':1}
+        p = json.dumps(j)
+        infot = self.publish(self.xConnectedTopic,p,retain=False,qos=1)
+        #infot.wait_for_publish()
+            
+    
+    def on_connect(self, mqttc, obj, flags, rc):
+        self.xLogging.debug("Connected")
+        return
+    
+    def on_message(self, mqttc, obj, msg):
+        print(msg.topic+" "+str(msg.qos)+" "+str(msg.payload))
+        
+    def on_disconnect(self, client, userdata, rc):
+        self.xLogging.debug("Disconnected %d"%rc)
+        if (rc != 0):
+            if (self.xReconnect):
+                self.doConnect()
+            
+        
+    
+    
