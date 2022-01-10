@@ -2,6 +2,9 @@ from mqttAgent import  MQTTAgent
 import logging
 from mqttObserver import MQTTObserver
 from mqttRouterPing import MQTTRouterPing
+from mqttRouterState import MQTTRouterState
+
+from twinState import TwinState
 
 logging.basicConfig(level="DEBUG")
 
@@ -11,14 +14,24 @@ mqttTarget="nas3"
 mqttPort=1883
 
 
+state = TwinState()
+state.setState({
+    'ok': True,
+    'count': 0
+    })
+
+
 mqttObs = MQTTObserver()
-mqttRouter = MQTTRouterPing(mqttUser)
+pingRouter = MQTTRouterPing(mqttUser)
+stateRouter = MQTTRouterState(mqttUser, state)
+
 
 mqttAgent = MQTTAgent(mqttUser)
 mqttAgent.credentials(mqttUser, mqttPwd)
 mqttAgent.mqttHub(mqttTarget, mqttPort, True)
 mqttAgent.addObserver(mqttObs)
-mqttAgent.addRouter(mqttRouter)
+mqttAgent.addRouter(pingRouter)
+mqttAgent.addRouter(stateRouter)
 
 mqttAgent.start()
 
