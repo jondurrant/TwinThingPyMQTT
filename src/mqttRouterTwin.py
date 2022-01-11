@@ -47,14 +47,23 @@ class MQTTRouterTwin(MQTTRouter):
         if ( topicHelper.topicEquals(self.xLC, topic)):
             target = self.tngTarget(topic)
             if (not self.isNewTwin(target)):
+                
                 twin = self.getTwin(target)
                 setTopic = topicHelper.getThingSet(target)
-                setState = {"state": twin.getReportedState()}
+                #setState = {'state': twin.getReportedState()}
+                setState = {'delta': twin.getReportedState()}
                 self.xLogging.debug("Set state on returning thing %s state %s"%(target, json.dumps(setState,sort_keys=True, indent=4) ))
                 interface.publish(setTopic, json.dumps(setState), retain=False, qos=1)
+                
+                if (not twin.isUptoDate()):
+                    deltaState = {'delta': twin.getDelta()}
+                    self.xLogging.debug("Set delta for returning thing %s delta %s"%(target, json.dumps(deltaState,sort_keys=True, indent=4)))
+                    interface.publish(setTopic, json.dumps(deltaState), retain=False, qos=1)
             else:
+                self.xLogging.debug("Unknown thing, so requesting get %s"%target)
                 getTopic = topicHelper.getThingGet(target)
                 interface.publish(getTopic, "{'GET': 1}", retain=False, qos=1)
+                
             
             self.xLogging.debug("LC event on %s"%topic)
             return True
