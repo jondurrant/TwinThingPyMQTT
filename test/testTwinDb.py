@@ -60,6 +60,13 @@ class TwinDbTests(unittest.TestCase):
         state = twin.getReportedState()
         self.assertEqual(state["count"], 13)
         
+    def testCount(self):
+        engine = create_engine(connectStr)
+        session = sessionmaker()
+        session.configure(bind=engine)
+        s=session()
+        twin = TwinDb("unknown")
+        self.assertGreater(twin.getTwinCount(s), 0)
         
 if __name__ == '__main__':
     unittest.main()

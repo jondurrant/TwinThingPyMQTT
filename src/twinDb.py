@@ -37,12 +37,22 @@ class TwinDb(Twin):
         try:
             twin = session.query(TwinTable).filter(TwinTable.clientId==self.clientId).one()
             self.reported.setState(twin.reported)
+            self.reported.meta = twin.reportedMeta
             self.desired.setState(twin.desired)
-            self.declined.setState(twin.declined) 
+            self.desired.meta = twin.desiredMeta
+            self.declined.setState(twin.declined)
+            self.declined.meta = twin.declinedMeta 
             return True
         except NoResultFound:
             return False
     
+    def getTwinCount(self, session):
+        try:
+            count = session.query(TwinTable).count()
+            return count
+        except NoResultFound:
+            return 0
+        
     
 Base = declarative_base()
     
