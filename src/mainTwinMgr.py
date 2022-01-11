@@ -9,9 +9,9 @@ from twinState import TwinState
 
 logging.basicConfig(level="DEBUG")
 
-mqttUser="super"
+mqttUser="twinmgt"
 mqttPwd="test"
-mqttTarget="nas3"
+mqttTarget= "nas3"
 mqttPort=1883
 
 
