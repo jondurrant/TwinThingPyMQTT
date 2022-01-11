@@ -50,8 +50,8 @@ class MQTTRouterTwin(MQTTRouter):
                 
                 twin = self.getTwin(target)
                 setTopic = topicHelper.getThingSet(target)
-                #setState = {'state': twin.getReportedState()}
-                setState = {'delta': twin.getReportedState()}
+                setState = {'state': twin.getReportedState()}
+                #setState = {'delta': twin.getReportedState()}
                 self.xLogging.debug("Set state on returning thing %s state %s"%(target, json.dumps(setState,sort_keys=True, indent=4) ))
                 interface.publish(setTopic, json.dumps(setState), retain=False, qos=1)
                 
@@ -82,10 +82,10 @@ class MQTTRouterTwin(MQTTRouter):
                 
             elif ("state" in j):
                 twin.stateFromThing(j["state"])
-                self.xLogging.debug("Twin %s state Payload %s"%(target, payload))
+                #self.xLogging.debug("Twin %s state Payload %s"%(target, payload))
             
             self.xLogging.debug("Twin %s Reported %s"%(target, json.dumps(twin.getReportedState(), sort_keys=True, indent=4)))
-            
+            self.pubUpdated(target, twin, interface)
             return True
         
         return False
@@ -104,6 +104,17 @@ class MQTTRouterTwin(MQTTRouter):
       
     def isNewTwin(self, target: str):
         return (not target in self.xCache)
+    
+    def pubUpdated(self, target: str, twin: Twin, interface: mqtt):
+        upd = { "desired": twin.getDesiredState(),
+               "desiredMeta": twin.getDesiredMeta(),
+               "reported": twin.getReportedState(),
+               "reportedMeta": twin.getReportedMeta(),
+               "declined": twin.getDeclinedState(),
+               "declinedMeta": twin.getDeclinedMeta()
+        }
+        updTopic = topicHelper.getTwinUpdate(target)
+        interface.publish(updTopic, json.dumps(upd), retain=False, qos=1)
             
             
     
