@@ -14,6 +14,12 @@ mqttPwd="test"
 mqttTarget= "nas3"
 mqttPort=1883
 
+dbUser = "oracrad"
+dbPwd ="Hm4CeqH7hkUf"
+dbHost = "nas3"
+dbPort = 3307
+dbSchema = "OracRad"
+
 
 state = TwinState()
 state.setState({
@@ -26,7 +32,7 @@ state.setState({
 mqttObs = MQTTObserver()
 pingRouter = MQTTRouterPing(mqttUser)
 stateRouter = MQTTRouterState(mqttUser, state)
-twinRouter = MQTTRouterTwin(mqttUser)
+twinRouter = MQTTRouterTwin(mqttUser, dbHost, dbPort, dbSchema, dbUser, dbPwd )
 
 
 mqttAgent = MQTTAgent(mqttUser)

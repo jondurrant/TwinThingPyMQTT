@@ -8,12 +8,18 @@ import paho.mqtt.client as mqtt
 from mqttRouter import MQTTRouter 
 import mqttTopicHelper as topicHelper
 from twinState import TwinState
-from twin import Twin
+from twinDb import TwinDb
 import twinProtocol
 import json
+from sqlalchemy import exc
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy import create_engine
 
 class MQTTRouterTwin(MQTTRouter):
-    def __init__(self, client_id: str):
+    
+    
+    def __init__(self, client_id: str, dbHost: str, dbPort: int, dbSchema: str,
+                 dbUser: str, dbPwd: str):
         super().__init__(client_id)
         self.xLogging = logging.getLogger(__name__)
         
@@ -24,6 +30,26 @@ class MQTTRouterTwin(MQTTRouter):
         self.xUpdate = topicHelper.getThingUpdate("+")
         
         self.xCache = {}
+        
+        self.connectStr='mysql+pymysql://%s:%s@%s:%d/%s'%(
+            dbUser,
+            dbPwd,
+            dbHost,
+            dbPort,
+            dbSchema
+            )
+        self.session=None
+        self.openDb()
+        
+    def openDb(self):
+        try:
+            engine = create_engine(self.connectStr)
+            session = sessionmaker()
+            session.configure(bind=engine)
+            self.session=session()
+        except exc.SQLAlchemyError:
+            self.xLogging.debug("Failed to open DB")
+            self.session = None
         
        
     def subscribe(self, interface: mqtt):
@@ -86,6 +112,7 @@ class MQTTRouterTwin(MQTTRouter):
             
             self.xLogging.debug("Twin %s Reported %s"%(target, json.dumps(twin.getReportedState(), sort_keys=True, indent=4)))
             self.pubUpdated(target, twin, interface)
+            self.storeTwin(twin)
             return True
         
         return False
@@ -98,14 +125,34 @@ class MQTTRouterTwin(MQTTRouter):
     
     def getTwin(self, target: str):
         if (not target in self.xCache):
-            self.xCache[target] = Twin()
+            self.xCache[target] = TwinDb(target)
+            try:
+                self.xCache[target].loadFromDb(self.session)
+            except exc.SQLAlchemyError:
+                self.xLogging.Error("Failed to read from DB, reopen")
+                self.openDb()
+                
             self.xLogging.debug("Added to Cache %s"%target)
         return self.xCache[target]
       
     def isNewTwin(self, target: str):
-        return (not target in self.xCache)
+        if (not target in self.xCache):
+            twin = TwinDb(target)
+            self.xCache[target] = twin
+            try:
+                if (twin.loadFromDb(self.session)):
+                    return False
+                else:
+                    return True
+            except exc.SQLAlchemyError:
+                self.xLogging.Error("Failed to read from DB, reopen")
+                self.openDb()
+                
+            return True
+        else:       
+            return False
     
-    def pubUpdated(self, target: str, twin: Twin, interface: mqtt):
+    def pubUpdated(self, target: str, twin: TwinDb, interface: mqtt):
         upd = { "desired": twin.getDesiredState(),
                "desiredMeta": twin.getDesiredMeta(),
                "reported": twin.getReportedState(),
@@ -116,5 +163,11 @@ class MQTTRouterTwin(MQTTRouter):
         updTopic = topicHelper.getTwinUpdate(target)
         interface.publish(updTopic, json.dumps(upd), retain=False, qos=1)
             
-            
+    def storeTwin(self, twin: TwinDb):  
+        try:
+            twin.updateDb(self.session)
+        except exc.SQLAlchemyError:
+            self.xLogging.Error("Failed to write to DB, reopen")
+            self.openDb()
+           
     
