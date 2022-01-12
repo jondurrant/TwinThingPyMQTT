@@ -9,6 +9,7 @@ from mqttRouter import MQTTRouter
 import mqttTopicHelper as topicHelper
 from twinState import TwinState
 from twinDb import TwinDb
+from mqttGroup import MQTTGroup
 import twinProtocol
 import json
 from sqlalchemy import exc
@@ -28,6 +29,9 @@ class MQTTRouterTwin(MQTTRouter):
         
         self.xLC = topicHelper.genLifeCycleTopic("+", topicHelper.MQTT_TOPIC_LIFECYCLE_ONLINE)
         self.xUpdate = topicHelper.getThingUpdate("+")
+        
+        self.xGrpSet = topicHelper.getTwinGroupSet("+")
+        self.xGrpGet = topicHelper.getTwinGroupGet("+")
         
         self.xCache = {}
         
@@ -57,9 +61,12 @@ class MQTTRouterTwin(MQTTRouter):
         interface.subscribe(self.xSet, qos=1)
         interface.subscribe(self.xLC, qos=1)
         interface.subscribe(self.xUpdate, qos=1)
+        interface.subscribe(self.xGrpGet, qos=1)
+        interface.subscribe(self.xGrpSet, qos=1)
         
         
     def route(self, topic: str, payload: str, interface: mqtt):
+        #Twin  Get
         if ( topicHelper.topicEquals(self.xGet, topic)):
             target = self.tngTarget(topic)
             j = json.loads(payload)
@@ -71,6 +78,8 @@ class MQTTRouterTwin(MQTTRouter):
                 self.pubUpdated(target, twin, interface)
                 
             return True
+        
+        #Twin Set
         if ( topicHelper.topicEquals(self.xSet, topic)):
             target = self.tngTarget(topic)
             j = json.loads(payload)
@@ -122,6 +131,16 @@ class MQTTRouterTwin(MQTTRouter):
             self.pubUpdated(target, twin, interface)
             self.storeTwin(twin)
             return True
+        
+        #Group Set
+        if (topicHelper.topicEquals(self.xGrpSet, topic)):
+            grp = self.tngTarget(topic)
+            j = json.loads(payload)
+            self.groupSet(grp, j, interface)
+            
+        #Group Get
+        if (topicHelper.topicEquals(self.xGrpGet, topic)):
+            self.xLogging("Group Get TODO %s"%topic)
         
         return False
         
@@ -205,3 +224,9 @@ class MQTTRouterTwin(MQTTRouter):
         interface.publish(setTopic, delta, retain=False, qos=1)
                 
     
+    def groupSet(self, grp: str, d: dict, interface: mqtt):
+        mGroup = MQTTGroup(grp)
+        targets = mGroup.getGroupTwinIds(self.session)
+        
+        for target in targets:
+            self.setTwin(target, d, interface)

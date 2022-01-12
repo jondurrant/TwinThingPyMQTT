@@ -102,6 +102,17 @@ def getTwinResult(id: str):
     return ("%s/%s/%s/%s"%(MQTT_TOPIC_THING_HEADER, id,
                  MQTT_TWIN_TOPIC, MQTT_STATE_TOPIC_RESULT))
     
+def getTwinGroupGet(id: str):
+    return ("%s/%s/%s/%s"%(MQTT_TOPIC_GROUP_HEADER, id,
+                 MQTT_TWIN_TOPIC, MQTT_STATE_TOPIC_GET))
+
+def getTwinGroupSet(id: str):
+    return ("%s/%s/%s/%s"%(MQTT_TOPIC_GROUP_HEADER, id,
+                 MQTT_TWIN_TOPIC, MQTT_STATE_TOPIC_SET))
+    
+def getTwinGroupResult(id: str):
+    return ("%s/%s/%s/%s"%(MQTT_TOPIC_GROUP_HEADER, id,
+                 MQTT_TWIN_TOPIC, MQTT_STATE_TOPIC_RESULT))
     
 def topicEquals(wild: str, fill: str):
     w = wild.split("/")

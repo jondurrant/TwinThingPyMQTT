@@ -61,5 +61,14 @@ class TopicHelperTests(unittest.TestCase):
         self.assertEqual(helper.topicEquals("TNG/foo/STATE/+", "TNG/foo/STATE/SET"), True)
         self.assertEqual(helper.topicEquals("TNG/foo/STATE/+", "TNG/jim/STATE/SET"), False)
         
+    def testTwinGroup(self):    
+        grp="ALL"
+        topic = helper.getTwinGroupGet(grp)
+        self.assertEqual(topic, "GRP/"+grp+"/TWIN/GET")
+        topic = helper.getTwinGroupSet(grp)
+        self.assertEqual(topic, "GRP/"+grp+"/TWIN/SET")
+        topic = helper.getTwinGroupResult(grp)
+        self.assertEqual(topic, "GRP/"+grp+"/TWIN/RES")
+    
 if __name__ == '__main__':
     unittest.main()
