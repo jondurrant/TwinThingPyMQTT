@@ -60,11 +60,19 @@ j = {'online':1}
 p = json.dumps(j)
 client.publish(connected_topic,p,retain=False,qos=1)
 
-
+#Simple Get return on UPD
 j = {'GET': 1}
 p = json.dumps(j)
-print("Publishing ping %s"%p)
+print("Publishing GET Simple %s"%p)
 infot = client.publish(get_topic, p,retain=False, qos=1)
 infot.wait_for_publish()
+
+#Query get return on RES
+j = {'select': ["clientId", "reported.temp"], 'as':["id", "temp"], 'query':12}
+p = json.dumps(j)
+print("Publishing GET Query %s"%p)
+infot = client.publish(get_topic, p,retain=False, qos=1)
+infot.wait_for_publish()
+
 
 time.sleep(30)

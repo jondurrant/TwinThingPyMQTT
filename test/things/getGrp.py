@@ -5,7 +5,7 @@ import sys
 
 
 if (len(sys.argv) != 2):
-    print("Require target ID as parater")
+    print("Require target ID as param")
     sys.exit()
 
 
@@ -22,10 +22,11 @@ connected_topic = "TNG/" + user + "/LC/ON"
 disconnected_topic = "TNG/" + user + "/LC/OFF"
 
 lc_topic = "TNG/" + targetId + "/LC/#"
-twin_topics = "TNG/" + targetId + "/TWIN/#"
-state_topics = "TNG/" + targetId + "/STATE/#"
-get_topic = "TNG/" + targetId + "/TWIN/GET"
-set_topic = "TNG/" + targetId + "/TWIN/SET"
+twin_topics = "TNG/+/TWIN/#"
+state_topics = "TNG/+/STATE/#"
+grp_topics = "GRP/" + targetId + "/#"
+get_topic = "GRP/" + targetId + "/TWIN/GET"
+set_topic = "GRP/" + targetId + "/TWIN/SET"
 
 # The callback for when the client receives a CONNACK response from the server.
 def on_connect(client, userdata, flags, rc):
@@ -56,7 +57,7 @@ client.subscribe( lc_topic )
 
 client.subscribe( state_topics )
 client.subscribe( twin_topics )
-
+client.subscribe( grp_topics )
     
 print("publishing connect")
 j = {'online':1}
@@ -64,10 +65,11 @@ p = json.dumps(j)
 client.publish(connected_topic,p,retain=False,qos=1)
 
 
-j = {'set': {'on': True, 'dseq':3, 'nseq': 2}}
+j = {'select': ["clientId", "reported.temp"], 'as':["id", "temp"], 'query':13,
+     'where': {'column': "reported.temp", 'op': ">", 'value': 10} }
 p = json.dumps(j)
 print("Publishing Set %s"%p)
-infot = client.publish(set_topic, p,retain=False, qos=1)
+infot = client.publish(get_topic, p,retain=False, qos=1)
 infot.wait_for_publish()
 
 time.sleep(30)

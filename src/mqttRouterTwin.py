@@ -10,6 +10,7 @@ import mqttTopicHelper as topicHelper
 from twinState import TwinState
 from twinDb import TwinDb
 from mqttGroup import MQTTGroup
+from mqttTwin import MQTTTwin
 import twinProtocol
 import json
 from sqlalchemy import exc
@@ -71,8 +72,9 @@ class MQTTRouterTwin(MQTTRouter):
             target = self.tngTarget(topic)
             j = json.loads(payload)
             if ("select" in j):
-                self.xLogging.debug("TODO Get %s"%payload)
-                # <<TODO>>
+                target = self.tngTarget(topic)
+                j = json.loads(payload)
+                self.twinGet(target, j, interface)
             else:
                 twin = self.getTwin(target)
                 self.pubUpdated(target, twin, interface)
@@ -83,7 +85,7 @@ class MQTTRouterTwin(MQTTRouter):
         if ( topicHelper.topicEquals(self.xSet, topic)):
             target = self.tngTarget(topic)
             j = json.loads(payload)
-            self.setTwin(target, j, interface)
+            self.twinSet(target, j, interface)
             return True
         
         #THing Online Sequence
@@ -140,7 +142,9 @@ class MQTTRouterTwin(MQTTRouter):
             
         #Group Get
         if (topicHelper.topicEquals(self.xGrpGet, topic)):
-            self.xLogging("Group Get TODO %s"%topic)
+            grp = self.tngTarget(topic)
+            j = json.loads(payload)
+            self.groupGet(grp, j, interface)
         
         return False
         
@@ -198,7 +202,7 @@ class MQTTRouterTwin(MQTTRouter):
             self.openDb()
        
        
-    def setTwin(self, target: str, j: dict, interface: mqtt):
+    def twinSet(self, target: str, j: dict, interface: mqtt):
         twin = self.getTwin(target)
         newStates = {}
         if ("set" in j):
@@ -230,3 +234,37 @@ class MQTTRouterTwin(MQTTRouter):
         
         for target in targets:
             self.setTwin(target, d, interface)
+            
+    def groupGet(self, grp: str, d: dict, interface: mqtt):
+        mGroup = MQTTGroup(grp)
+        select = d.get("select", ["*"])
+        columnAs = d.get("as",  [])           
+        where = d.get("where", {})
+        orient = d.get("orient", "records")
+        query = d.get("query", 0)                 
+
+        s = mGroup.selectTwinFrame(self.session, select, columnAs, where, orient)
+        j = {
+                "query": query,
+                "res": json.loads(s)
+            }
+        topic = topicHelper.getTwinGroupResult(grp)
+        interface.publish(topic, json.dumps(j), retain=False, qos=1)
+        
+        
+    def twinGet(self, target: str, d: dict, interface: mqtt):
+        mTwin = MQTTTwin(target)
+        select = d.get("select", ["*"])
+        columnAs = d.get("as",  [])           
+        where = d.get("where", {})
+        orient = d.get("orient", "records")
+        query = d.get("query", 0)                 
+
+        s = mTwin.selectTwinFrame(self.session, select, columnAs, where, orient)
+        j = {
+                "query": query,
+                "res": json.loads(s)
+            }
+        topic = topicHelper.getTwinResult(target)
+        interface.publish(topic, json.dumps(j), retain=False, qos=1)
+            
