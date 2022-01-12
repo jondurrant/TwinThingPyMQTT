@@ -62,11 +62,19 @@ class MQTTRouterTwin(MQTTRouter):
     def route(self, topic: str, payload: str, interface: mqtt):
         if ( topicHelper.topicEquals(self.xGet, topic)):
             target = self.tngTarget(topic)
-            self.xLogging.debug("TODO Get %s"%topic)
+            j = json.loads(payload)
+            if ("select" in j):
+                self.xLogging.debug("TODO Get %s"%payload)
+                # <<TODO>>
+            else:
+                twin = self.getTwin(target)
+                self.pubUpdated(target, twin, interface)
+                
             return True
         if ( topicHelper.topicEquals(self.xSet, topic)):
             target = self.tngTarget(topic)
-            self.xLogging.debug("TODO Set %s"%topic)
+            j = json.loads(payload)
+            self.setTwin(target, j, interface)
             return True
         
         #THing Online Sequence
@@ -78,12 +86,12 @@ class MQTTRouterTwin(MQTTRouter):
                 setTopic = topicHelper.getThingSet(target)
                 setState = {'state': twin.getReportedState()}
                 #setState = {'delta': twin.getReportedState()}
-                self.xLogging.debug("Set state on returning thing %s state %s"%(target, json.dumps(setState,sort_keys=True, indent=4) ))
+                self.xLogging.debug("Set state on returning thing %s state %s"%(target, json.dumps(setState,sort_keys=True) ))
                 interface.publish(setTopic, json.dumps(setState), retain=False, qos=1)
                 
                 if (not twin.isUptoDate()):
                     deltaState = {'delta': twin.getDelta()}
-                    self.xLogging.debug("Set delta for returning thing %s delta %s"%(target, json.dumps(deltaState,sort_keys=True, indent=4)))
+                    self.xLogging.debug("Set delta for returning thing %s delta %s"%(target, json.dumps(deltaState,sort_keys=True)))
                     interface.publish(setTopic, json.dumps(deltaState), retain=False, qos=1)
             else:
                 self.xLogging.debug("Unknown thing, so requesting get %s"%target)
@@ -110,7 +118,7 @@ class MQTTRouterTwin(MQTTRouter):
                 twin.stateFromThing(j["state"])
                 #self.xLogging.debug("Twin %s state Payload %s"%(target, payload))
             
-            self.xLogging.debug("Twin %s Reported %s"%(target, json.dumps(twin.getReportedState(), sort_keys=True, indent=4)))
+            self.xLogging.debug("Twin %s Reported %s"%(target, json.dumps(twin.getReportedState(), sort_keys=True)))
             self.pubUpdated(target, twin, interface)
             self.storeTwin(twin)
             return True
@@ -129,7 +137,7 @@ class MQTTRouterTwin(MQTTRouter):
             try:
                 self.xCache[target].loadFromDb(self.session)
             except exc.SQLAlchemyError:
-                self.xLogging.Error("Failed to read from DB, reopen")
+                self.xLogging.error("Failed to read from DB, reopen")
                 self.openDb()
                 
             self.xLogging.debug("Added to Cache %s"%target)
@@ -145,7 +153,7 @@ class MQTTRouterTwin(MQTTRouter):
                 else:
                     return True
             except exc.SQLAlchemyError:
-                self.xLogging.Error("Failed to read from DB, reopen")
+                self.xLogging.error("Failed to read from DB, reopen")
                 self.openDb()
                 
             return True
@@ -167,7 +175,33 @@ class MQTTRouterTwin(MQTTRouter):
         try:
             twin.updateDb(self.session)
         except exc.SQLAlchemyError:
-            self.xLogging.Error("Failed to write to DB, reopen")
+            self.xLogging.error("Failed to write to DB, reopen")
             self.openDb()
-           
+       
+       
+    def setTwin(self, target: str, j: dict, interface: mqtt):
+        twin = self.getTwin(target)
+        newStates = {}
+        if ("set" in j):
+            newStates = j["set"]
+        elif ("delta" in j):
+            newStates = j["delta"]
+        elif ("state" in j):
+            newStates = j["state"]
+        else:
+            self.xLogging.error("Unknown format for set  %s"%json.dumps(j))
+            return 
+        
+        #Update twin
+        self.xLogging.debug("Updating with %s"%json.dumps(newStates, sort_keys=True))
+        twin.updateDesiredState(newStates)
+        self.storeTwin(twin)
+        self.pubUpdated(target, twin, interface)
+        
+        #Update thing
+        setTopic = topicHelper.getThingSet(target)
+        delta = json.dumps({"delta": twin.getDelta()})
+        self.xLogging.debug("Sending Thing delta->  %s"%delta)
+        interface.publish(setTopic, delta, retain=False, qos=1)
+                
     

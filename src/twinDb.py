@@ -53,6 +53,10 @@ class TwinDb(Twin):
         except NoResultFound:
             return 0
         
+    def outputJson(self, s):
+        #Nop
+        return
+        
     
 Base = declarative_base()
     
