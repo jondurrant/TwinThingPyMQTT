@@ -63,7 +63,10 @@ client.publish(connected_topic,p,retain=False,qos=1)
 
 j = {'state':{
         'ok': False,
-        'count': 22
+        'count': 22,
+        'on': True,
+        'nseq': 0,
+        'dseq': 1
     }
     }
 p = json.dumps(j)

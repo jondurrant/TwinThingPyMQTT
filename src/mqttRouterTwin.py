@@ -76,7 +76,7 @@ class MQTTRouterTwin(MQTTRouter):
                 j = json.loads(payload)
                 self.twinGet(target, j, interface)
             else:
-                twin = self.getTwin(target)
+                twin = self.getTwin(target, interface)
                 self.pubUpdated(target, twin, interface)
                 
             return True
@@ -93,7 +93,8 @@ class MQTTRouterTwin(MQTTRouter):
             target = self.tngTarget(topic)
             if (not self.isNewTwin(target)):
                 
-                twin = self.getTwin(target)
+                twin = self.getTwin(target, interface)
+                
                 setTopic = topicHelper.getThingSet(target)
                 setState = {'state': twin.getReportedState()}
                 #setState = {'delta': twin.getReportedState()}
@@ -104,6 +105,7 @@ class MQTTRouterTwin(MQTTRouter):
                     deltaState = {'delta': twin.getDelta()}
                     self.xLogging.debug("Set delta for returning thing %s delta %s"%(target, json.dumps(deltaState,sort_keys=True)))
                     interface.publish(setTopic, json.dumps(deltaState), retain=False, qos=1)
+                
             else:
                 self.xLogging.debug("Unknown thing, so requesting get %s"%target)
                 getTopic = topicHelper.getThingGet(target)
@@ -117,7 +119,7 @@ class MQTTRouterTwin(MQTTRouter):
         if (topicHelper.topicEquals(self.xUpdate, topic)):
             target = self.tngTarget(topic)
             n = self.isNewTwin(target)
-            twin = self.getTwin(target)
+            twin = self.getTwin(target, interface)
             j = json.loads(payload)
             if ("delta" in j):
                 twin.updateFromThing(j["delta"])
@@ -154,22 +156,41 @@ class MQTTRouterTwin(MQTTRouter):
         
         return target
     
-    def getTwin(self, target: str):
+    def getTwin(self, target: str, interface: mqtt):
+        self.xLogging.debug("****GET TWIN %s"%target)
         if (not target in self.xCache):
+            self.xLogging.debug("Twin not in cache %s"%target)
             self.xCache[target] = TwinDb(target)
             try:
-                self.xCache[target].loadFromDb(self.session)
+                if (self.xCache[target].loadFromDb(self.session)):
+                    self.xLogging.debug("Twin %s loaded from DB"%target)
+                    twin = self.xCache[target]
+                    setTopic = topicHelper.getThingSet(target)
+                    setState = {'state': twin.getReportedState()}
+                    self.xLogging.debug("Set state on returning thing %s state %s"%(target, json.dumps(setState,sort_keys=True) ))
+                    interface.publish(setTopic, json.dumps(setState), retain=False, qos=1)
+                    
+                    if (not twin.isUptoDate()):
+                        deltaState = {'delta': twin.getDelta()}
+                        self.xLogging.debug("Set delta for returning thing %s delta %s"%(target, json.dumps(deltaState,sort_keys=True)))
+                        interface.publish(setTopic, json.dumps(deltaState), retain=False, qos=1) 
+                else:
+                    self.xLogging.debug("Twin %s not in DB"%target)
+                    getTopic = topicHelper.getThingGet(target)
+                    interface.publish(getTopic, "{'GET': 1}", retain=False, qos=1)
+                    
             except exc.SQLAlchemyError:
                 self.xLogging.error("Failed to read from DB, reopen")
                 self.openDb()
-                
-            self.xLogging.debug("Added to Cache %s"%target)
+        else:
+            self.xLogging.debug("Twin in cache %s"%target)    
+            
         return self.xCache[target]
       
     def isNewTwin(self, target: str):
         if (not target in self.xCache):
             twin = TwinDb(target)
-            self.xCache[target] = twin
+            #self.xCache[target] = twin
             try:
                 if (twin.loadFromDb(self.session)):
                     return False
@@ -203,7 +224,7 @@ class MQTTRouterTwin(MQTTRouter):
        
        
     def twinSet(self, target: str, j: dict, interface: mqtt):
-        twin = self.getTwin(target)
+        twin = self.getTwin(target, interface)
         newStates = {}
         if ("set" in j):
             newStates = j["set"]
