@@ -20,7 +20,16 @@ from sqlalchemy import create_engine
 
 class MQTTRouterTwin(MQTTRouter):
     
-    
+    #=======================================================================
+    # Constructor
+    # state: TwinState: state object that holds the states about the Twin management
+    # client_id: str - Client id for this thing
+    # dbHost: str - DB host
+    # dbPort: int - port for the DB connection
+    # dbSchema: str - DB Schema,
+    # dbUser: str - User name for DB access 
+    # dbPwd: str - password for DB access
+    #=======================================================================
     def __init__(self, state: TwinState, client_id: str, dbHost: str, dbPort: int, dbSchema: str,
                  dbUser: str, dbPwd: str):
         super().__init__(client_id)
@@ -48,6 +57,9 @@ class MQTTRouterTwin(MQTTRouter):
         self.session=None
         self.openDb()
         
+    #===========================================================================
+    # Open the DB, local used function
+    #===========================================================================
     def openDb(self):
         try:
             engine = create_engine(self.connectStr)
@@ -66,7 +78,10 @@ class MQTTRouterTwin(MQTTRouter):
             self.xLogging.debug("Failed to open DB")
             self.session = None
         
-       
+   #========================================================================
+   # Subscribe to the Get and Set twin and groups
+   # Also subscrine to LC connects
+   #========================================================================
     def subscribe(self, interface: mqtt):
         interface.subscribe(self.xGet, qos=1)
         interface.subscribe(self.xSet, qos=1)
@@ -75,7 +90,9 @@ class MQTTRouterTwin(MQTTRouter):
         interface.subscribe(self.xGrpGet, qos=1)
         interface.subscribe(self.xGrpSet, qos=1)
         
-        
+    #=======================================================================
+    # Route the published messahes
+    #=======================================================================
     def route(self, topic: str, payload: str, interface: mqtt):
         #Twin  Get
         if ( topicHelper.topicEquals(self.xGet, topic)):
@@ -160,12 +177,19 @@ class MQTTRouterTwin(MQTTRouter):
         
         return False
         
-
+    #===========================================================================
+    # Split out the target ID or group from the topic
+    #===========================================================================
     def tngTarget(self, topic: str):
         target = topic.split("/")[1]
         
         return target
     
+    #===========================================================================
+    # Get the twin based on it's client id
+    # target: str, - Client id of the target thing
+    # interface: mqtt - mqtt interface to allow request of a get
+    #===========================================================================
     def getTwin(self, target: str, interface: mqtt):
         self.xLogging.debug("****GET TWIN %s"%target)
         if (not target in self.xCache):
@@ -211,6 +235,11 @@ class MQTTRouterTwin(MQTTRouter):
             
         return self.xCache[target]
       
+      
+    #===========================================================================
+    # Is the twin new and not in the DB
+    # target - client_id of the thing
+    #===========================================================================
     def isNewTwin(self, target: str):
         if (not target in self.xCache):
             twin = TwinDb(target)
@@ -228,6 +257,9 @@ class MQTTRouterTwin(MQTTRouter):
         else:       
             return False
     
+    #===========================================================================
+    # Publish update of a twin to the UPD channel. Has full reported status
+    #===========================================================================
     def pubUpdated(self, target: str, twin: TwinDb, interface: mqtt):
         upd = { "desired": twin.getDesiredState(),
                "desiredMeta": twin.getDesiredMeta(),
@@ -239,6 +271,9 @@ class MQTTRouterTwin(MQTTRouter):
         updTopic = topicHelper.getTwinUpdate(target)
         interface.publish(updTopic, json.dumps(upd), retain=False, qos=1)
             
+    #===========================================================================
+    # Stoew the twin into the database
+    #===========================================================================
     def storeTwin(self, twin: TwinDb):  
         try:
             twin.updateDb(self.session)
@@ -246,7 +281,9 @@ class MQTTRouterTwin(MQTTRouter):
             self.xLogging.error("Failed to write to DB, reopen")
             self.openDb()
        
-       
+    #===========================================================================
+    # Handle a Twin set request
+    #===========================================================================
     def twinSet(self, target: str, j: dict, interface: mqtt):
         twin = self.getTwin(target, interface)
         newStates = {}
@@ -272,7 +309,9 @@ class MQTTRouterTwin(MQTTRouter):
         self.xLogging.debug("Sending Thing delta->  %s"%delta)
         interface.publish(setTopic, delta, retain=False, qos=1)
                 
-    
+    #===========================================================================
+    # Handle a group set request
+    #===========================================================================
     def groupSet(self, grp: str, d: dict, interface: mqtt):
         mGroup = MQTTGroup(grp)
         targets = mGroup.getGroupTwinIds(self.session)
@@ -280,6 +319,9 @@ class MQTTRouterTwin(MQTTRouter):
         for target in targets:
             self.setTwin(target, d, interface)
             
+    #===========================================================================
+    # Handle a group get request. This will be a query structure
+    #===========================================================================
     def groupGet(self, grp: str, d: dict, interface: mqtt):
         mGroup = MQTTGroup(grp)
         select = d.get("select", ["*"])
@@ -296,7 +338,9 @@ class MQTTRouterTwin(MQTTRouter):
         topic = topicHelper.getTwinGroupResult(grp)
         interface.publish(topic, json.dumps(j), retain=False, qos=1)
         
-        
+    #=======================================================================
+    # Handle a twin get request of query format
+    #=======================================================================
     def twinGet(self, target: str, d: dict, interface: mqtt):
         mTwin = MQTTTwin(target)
         select = d.get("select", ["*"])
@@ -313,7 +357,9 @@ class MQTTRouterTwin(MQTTRouter):
         topic = topicHelper.getTwinResult(target)
         interface.publish(topic, json.dumps(j), retain=False, qos=1)
         
-        
+    #=======================================================================
+    # Cach housekeep to remoev items older that parameter from the cache
+    #=======================================================================
     def cacheHousekeeping(self, removeOlderSeconds: int):
         ms = removeOlderSeconds * 1000
         purgeList = []

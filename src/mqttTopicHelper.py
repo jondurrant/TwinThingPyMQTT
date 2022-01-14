@@ -85,31 +85,58 @@ def getThingSet(id: str):
                  MQTT_STATE_TOPIC, MQTT_STATE_TOPIC_SET))
     
    
-   
+#============================================================================
+# Get a twin get topic
+# e.g. TNG/thing/TWIN/GET
+#============================================================================
 def getTwinGet(id: str):
     return ("%s/%s/%s/%s"%(MQTT_TOPIC_THING_HEADER, id,
                  MQTT_TWIN_TOPIC, MQTT_STATE_TOPIC_GET))
 
+#============================================================================
+# Get a twin set topic
+# e.g. TNG/thing/TWIN/SET
+#============================================================================
 def getTwinSet(id: str):
     return ("%s/%s/%s/%s"%(MQTT_TOPIC_THING_HEADER, id,
                  MQTT_TWIN_TOPIC, MQTT_STATE_TOPIC_SET))
-    
+   
+#============================================================================
+# Get a twin update topic
+# e.g. TNG/thing/TWIN/UPD
+#============================================================================ 
 def getTwinUpdate(id: str):
     return ("%s/%s/%s/%s"%(MQTT_TOPIC_THING_HEADER, id,
                  MQTT_TWIN_TOPIC, MQTT_STATE_TOPIC_UPDATE))
     
+#============================================================================
+# Get a twin result topic
+# e.g. TNG/thing/TWIN/RES
+#============================================================================
 def getTwinResult(id: str):
     return ("%s/%s/%s/%s"%(MQTT_TOPIC_THING_HEADER, id,
                  MQTT_TWIN_TOPIC, MQTT_STATE_TOPIC_RESULT))
     
+#============================================================================
+# Get a grp get topic
+# e.g. GRP/name/TWIN/GET
+#============================================================================
 def getTwinGroupGet(id: str):
     return ("%s/%s/%s/%s"%(MQTT_TOPIC_GROUP_HEADER, id,
                  MQTT_TWIN_TOPIC, MQTT_STATE_TOPIC_GET))
-
+    
+#============================================================================
+# Get a grp set topic
+# e.g. GRP/name/TWIN/SET
+#============================================================================
 def getTwinGroupSet(id: str):
     return ("%s/%s/%s/%s"%(MQTT_TOPIC_GROUP_HEADER, id,
                  MQTT_TWIN_TOPIC, MQTT_STATE_TOPIC_SET))
     
+#============================================================================
+# Get a grp result topic
+# e.g. GRP/name/TWIN/RES
+#============================================================================
 def getTwinGroupResult(id: str):
     return ("%s/%s/%s/%s"%(MQTT_TOPIC_GROUP_HEADER, id,
                  MQTT_TWIN_TOPIC, MQTT_STATE_TOPIC_RESULT))

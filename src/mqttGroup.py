@@ -12,9 +12,16 @@ from array import array
 import pandas as pd
 
 class MQTTGroup:
+    #===========================================================================
+    # Constructor
+    #===========================================================================
     def __init__(self, name: str):
         self.name = name
         
+    #===========================================================================
+    # Get twin ID that belong to a group
+    # session: Data base session - sqlalchemy
+    #===========================================================================
     def getGroupTwinIds(self, session):
         con = session.connection()
         rs = con.execute('SELECT DISTINCT clientid FROM mqtt_acl where topic = "GRP/%s/#";'%self.name)
@@ -23,7 +30,14 @@ class MQTTGroup:
             res.append(row[0])
         return res
         
-        
+    #=======================================================================
+    # Select twins that confirm to sql like query
+    # session: Data base session - sqlalchemy
+    # select: array of strings naming fields to pull back. if json inside a fiend then dot notation allowed
+    # asColumn: will rename the select to a new name
+    # where: where dict form: {column: <name>, op: <op>, value: <value>}, {and/or: [set of wheres]}
+    # orient: Pandas allowed formats of ["split", "records", "index", "values", "table", "columns"]
+    #=======================================================================
     def selectTwinFrame(self, session, select: array = [], asColumn: array = [], where: dict = {}, orient: str="split"):
         sql = 'SELECT '
         selectCount = len(select)
@@ -65,7 +79,9 @@ class MQTTGroup:
     
     
     
-    
+    #===========================================================================
+    # Convert any select name to sql format, handles itnernam json query
+    #===========================================================================
     def sqlSelect(self, column: str):
         parts = column.split(".", 1)
         if (len(parts) == 1):
@@ -73,7 +89,9 @@ class MQTTGroup:
         else:
             return ("json_extract(%s, \'$.%s\')"%(parts[0], parts[1]))
 
-
+    #===========================================================================
+    # Convert a where dict to sql query format
+    #===========================================================================
     def whereToSQL(self, where: dict):
         res=""
         if ("column" in where):
@@ -103,6 +121,9 @@ class MQTTGroup:
                 res = res + ")"
         return res
         
+    #=======================================================================
+    # Appropriate handle literates for query
+    #=======================================================================
     def sqlLiteral(self, o):
         if (isinstance(o, str)):
             return '"%s"'%o

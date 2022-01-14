@@ -44,7 +44,9 @@ class MQTTAgent(mqtt.Client):
         self.xMqttUser = mqttUser
         self.xMqttPwd = mqttPwd
         
-    
+    #===========================================================================
+    # Set up the target MQTT Hub to talk to
+    #===========================================================================
     def mqttHub(self, mqttTarget: str, mqttPort: int, recon: bool):
         self.xMqttTarget = mqttTarget
         self.xMqttPort = mqttPort
@@ -52,12 +54,16 @@ class MQTTAgent(mqtt.Client):
         self.username_pw_set(username=self.xMqttUser, password=self.xMqttPwd)
         #self.start()
         
+    #===========================================================================
+    # Start task connecting and responding
+    #===========================================================================
     def start(self):
         self.doConnect()
-        
-        #self.client.loop_start()
         self.loop_forever()
      
+    #===========================================================================
+    # Connect to the MQTT Hub
+    #===========================================================================
     def doConnect(self):
         j = {'online':0}
         p = json.dumps(j)
@@ -67,9 +73,11 @@ class MQTTAgent(mqtt.Client):
         j = {'online':1}
         p = json.dumps(j)
         infot = self.publish(self.xConnectedTopic,p,retain=False,qos=1)
-        #infot.wait_for_publish()
+
             
-    
+    #===========================================================================
+    # On Connection call back.
+    #===========================================================================
     def on_connect(self, mqttc, obj, flags, rc):
         self.xLogging.debug("Connected")
         for o in self.xObservers:
@@ -78,6 +86,9 @@ class MQTTAgent(mqtt.Client):
             r.subscribe(self)
         return
     
+    #===========================================================================
+    # On message call back, trigger the routers
+    #===========================================================================
     def on_message(self, mqttc, obj, msg):
         self.xLogging.debug("Received topic %s payload %s"%(msg.topic, str(msg.payload)))
         for o in self.xObservers:
@@ -85,7 +96,9 @@ class MQTTAgent(mqtt.Client):
         for r in self.xRouters:
             if (r.route(msg.topic, msg.payload, self)):
                 return
-        
+    #=======================================================================
+    # on disconnect callb ack. 
+    #=======================================================================
     def on_disconnect(self, client, userdata, rc):
         self.xLogging.debug("Disconnected %d"%rc)
         for o in self.xObservers:
@@ -93,14 +106,23 @@ class MQTTAgent(mqtt.Client):
         if (rc != 0):
             if (self.xReconnect):
                 self.doConnect()
-            
+         
+   #========================================================================
+   # on publish call back
+   #========================================================================
     def on_publish(self, client, userdata, mid):
         for o in self.xObservers:
             o.sent()
     
+    #===========================================================================
+    # Add observer to listen to connection and disconnect events
+    #===========================================================================
     def addObserver(self, o: MQTTObserver):
         self.xObservers.append(o)    
     
+    #===========================================================================
+    # Add a router to handle messages
+    #===========================================================================
     def addRouter(self, router: MQTTRouter):
         self.xRouters.append(router)
     
