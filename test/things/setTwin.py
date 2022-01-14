@@ -64,7 +64,7 @@ p = json.dumps(j)
 client.publish(connected_topic,p,retain=False,qos=1)
 
 
-j = {'set': {'on': True, 'dseq':3, 'nseq': 2}}
+j = {'set': {'on': True, 'dseq':3, 'nseq': 2, 'count': 10}}
 p = json.dumps(j)
 print("Publishing Set %s"%p)
 infot = client.publish(set_topic, p,retain=False, qos=1)

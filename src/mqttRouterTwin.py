@@ -11,6 +11,7 @@ from twinState import TwinState
 from twinDb import TwinDb
 from mqttGroup import MQTTGroup
 from mqttTwin import MQTTTwin
+from twinState import TwinState
 import twinProtocol
 import json
 from sqlalchemy import exc
@@ -20,9 +21,10 @@ from sqlalchemy import create_engine
 class MQTTRouterTwin(MQTTRouter):
     
     
-    def __init__(self, client_id: str, dbHost: str, dbPort: int, dbSchema: str,
+    def __init__(self, state: TwinState, client_id: str, dbHost: str, dbPort: int, dbSchema: str,
                  dbUser: str, dbPwd: str):
         super().__init__(client_id)
+        self.xState = state
         self.xLogging = logging.getLogger(__name__)
         
         self.xSet = topicHelper.getTwinSet("+")
@@ -52,6 +54,14 @@ class MQTTRouterTwin(MQTTRouter):
             session = sessionmaker()
             session.configure(bind=engine)
             self.session=session()
+            
+            #set Count
+            fakeTwin = TwinDb("UNKNOWN")
+            count = fakeTwin.getTwinCount(self.session)
+            delta = {
+                'things': count
+            }
+            self.xState.updateState(delta)
         except exc.SQLAlchemyError:
             self.xLogging.debug("Failed to open DB")
             self.session = None
@@ -174,10 +184,24 @@ class MQTTRouterTwin(MQTTRouter):
                         deltaState = {'delta': twin.getDelta()}
                         self.xLogging.debug("Set delta for returning thing %s delta %s"%(target, json.dumps(deltaState,sort_keys=True)))
                         interface.publish(setTopic, json.dumps(deltaState), retain=False, qos=1) 
+                
+                    #Update Cache Stats
+                    delta = {
+                        'cache': self.xState.getState().get('cache', 0)+1
+                    }
+                    self.xState.updateState(delta)
+                
                 else:
                     self.xLogging.debug("Twin %s not in DB"%target)
                     getTopic = topicHelper.getThingGet(target)
                     interface.publish(getTopic, "{'GET': 1}", retain=False, qos=1)
+                    
+                     #Update Cache Stats
+                    delta = {
+                        'cache': self.xState.getState().get('cache', 0)+1,
+                        'things': self.xState.getState().get('things', 0)+1,
+                    }
+                    self.xState.updateState(delta)
                     
             except exc.SQLAlchemyError:
                 self.xLogging.error("Failed to read from DB, reopen")
@@ -288,4 +312,27 @@ class MQTTRouterTwin(MQTTRouter):
             }
         topic = topicHelper.getTwinResult(target)
         interface.publish(topic, json.dumps(j), retain=False, qos=1)
+        
+        
+    def cacheHousekeeping(self, removeOlderSeconds: int):
+        ms = removeOlderSeconds * 1000
+        purgeList = []
+        for target in self.xCache:
+            twin = self.xCache[target]
+            if (twin.timeSinceConversation() > ms):
+                purgeList.append(target)
+        
+        for target in purgeList:
+            del self.xCache[target]
+        
+        self.xLogging.debug("Purged %s", json.dumps(purgeList))
+        
+         #Update Cache Stats
+        delta = {
+            'cache': len(self.xCache)
+        }
+        self.xState.updateState(delta)
+                
+            
+            
             

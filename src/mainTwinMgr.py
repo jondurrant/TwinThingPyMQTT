@@ -2,10 +2,11 @@ from mqttAgent import  MQTTAgent
 import logging
 from mqttObserver import MQTTObserver
 from mqttRouterPing import MQTTRouterPing
-from mqttRouterState import MQTTRouterState
+from twinMgrStateRouter import TwinMgrStateRouter
 from mqttRouterTwin import MQTTRouterTwin
 
 from twinState import TwinState
+import threading
 
 logging.basicConfig(level="DEBUG")
 
@@ -28,19 +29,31 @@ state.setState({
     'cache': 0
     })
 
-
-mqttObs = MQTTObserver()
-pingRouter = MQTTRouterPing(mqttUser)
-stateRouter = MQTTRouterState(mqttUser, state)
-twinRouter = MQTTRouterTwin(mqttUser, dbHost, dbPort, dbSchema, dbUser, dbPwd )
-
-
 mqttAgent = MQTTAgent(mqttUser)
 mqttAgent.credentials(mqttUser, mqttPwd)
 mqttAgent.mqttHub(mqttTarget, mqttPort, True)
+
+mqttObs = MQTTObserver()
+pingRouter = MQTTRouterPing(mqttUser)
+stateRouter = TwinMgrStateRouter(mqttUser, state, mqttAgent)
+twinRouter = MQTTRouterTwin(state, mqttUser, dbHost, dbPort, dbSchema, dbUser, dbPwd )
+
+
+
 mqttAgent.addObserver(mqttObs)
 mqttAgent.addRouter(pingRouter)
 mqttAgent.addRouter(stateRouter)
 mqttAgent.addRouter(twinRouter)
+
+xTimer = None
+def housekeeping():
+    print("Housekeeping")
+    twinRouter.cacheHousekeeping(60.0*15)
+    xTimer = threading.Timer(60.0*60.0, housekeeping)
+    xTimer.start()
+
+xTimer = threading.Timer(60.0*15, housekeeping)
+xTimer.start()
+
 
 mqttAgent.start()
