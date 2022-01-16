@@ -2,6 +2,7 @@ import paho.mqtt.client as mqtt
 import json
 import time
 import sys
+import os
 
 
 if (len(sys.argv) != 2):
@@ -13,10 +14,11 @@ targetId = sys.argv[1]
 
 
     
-host = "nas3"
-port = 1883
-user = "super"
-passwd = "test"
+user=os.environ.get("MQTT_USER")
+passwd=os.environ.get("MQTT_PASSWD")
+host= os.environ.get("MQTT_HOST")
+port=int(os.environ.get("MQTT_PORT"))
+print("MQTT %s:%d - %s\n"%(host,port, user))
 
 connected_topic = "TNG/" + user + "/LC/ON"
 disconnected_topic = "TNG/" + user + "/LC/OFF"

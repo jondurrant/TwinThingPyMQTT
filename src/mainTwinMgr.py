@@ -9,26 +9,32 @@ from mqttObserver import MQTTObserver
 from mqttRouterPing import MQTTRouterPing
 from twinMgrStateRouter import TwinMgrStateRouter
 from mqttRouterTwin import MQTTRouterTwin
+import os
 
 from twinState import TwinState
 import threading
 
 #Debug level
-logging.basicConfig(level="DEBUG")
+logging.basicConfig(level="DEBUG", 
+                    format= '[%(asctime)s] {%(name)s:%(lineno)d} %(levelname)s - %(message)s')
+
 
 
 #Credentials = needs to look at picking up from network
-mqttUser="twinmgt"
-mqttPwd="test"
-mqttTarget= "nas3"
-mqttPort=1883
+mqttUser=os.environ.get("MQTT_USER")
+mqttPwd=os.environ.get("MQTT_PASSWD")
+mqttTarget= os.environ.get("MQTT_HOST")
+mqttPort=int(os.environ.get("MQTT_PORT"))
 
-dbUser = "oracrad"
-dbPwd ="Hm4CeqH7hkUf"
-dbHost = "nas3"
-dbPort = 3307
-dbSchema = "OracRad"
+logging.info("MQTT %s:%d User:%s"%(mqttTarget, mqttPort, mqttUser))
 
+dbUser = os.environ.get("TWIN_DB_USER")
+dbPwd = os.environ.get("TWIN_DB_PASSWD")
+dbHost = os.environ.get("TWIN_DB_HOST")
+dbPort = int(os.environ.get("TWIN_DB_PORT"))
+dbSchema = os.environ.get("TWIN_DB_SCHEMA")
+
+logging.info("Twin DB %s:%d Scheme:%s User:%s"%(dbHost, dbPort, dbSchema, dbUser))
 
 #Setup the state. Have some stats on behaviour
 state = TwinState()
