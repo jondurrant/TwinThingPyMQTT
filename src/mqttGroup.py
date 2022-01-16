@@ -8,8 +8,11 @@ from sqlalchemy import create_engine, Column
 from sqlalchemy.sql.sqltypes import Boolean, String, JSON
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
+from sqlalchemy.orm import exc
+exceptions = exc.sa_exc
 from array import array
 import pandas as pd
+import logging
 
 class MQTTGroup:
     #===========================================================================
@@ -17,6 +20,7 @@ class MQTTGroup:
     #===========================================================================
     def __init__(self, name: str):
         self.name = name
+        self.xLogging = logging.getLogger(__name__)
         
     #===========================================================================
     # Get twin ID that belong to a group
@@ -24,11 +28,15 @@ class MQTTGroup:
     #===========================================================================
     def getGroupTwinIds(self, session):
         con = session.connection()
-        rs = con.execute('SELECT DISTINCT clientid FROM mqtt_acl where topic = "GRP/%s/#";'%self.name)
-        res = []
-        for row in rs:
-            res.append(row[0])
-        return res
+        try: 
+            rs = con.execute('SELECT DISTINCT clientid FROM mqtt_acl where topic = "GRP/%s/#";'%self.name)
+            res = []
+            for row in rs:
+                res.append(row[0])
+            return res
+        except exceptions.SQLAlchemyError as Argument:
+            self.xLogging.exception("Unable to retrieve group from db")
+            return []
         
     #=======================================================================
     # Select twins that confirm to sql like query
@@ -45,10 +53,14 @@ class MQTTGroup:
             sql = sql + '* '
         for i in range(selectCount):
             s = self.sqlSelect(select[i])
-            if (len(asColumn) > i):
-                sql = sql + s + " as " + asColumn[i]
+            
+            if (s == "groupId"):
+                sql = sql + '"' + self.name + '" as groupId'
             else:
-                sql = sql + s
+                if (len(asColumn) > i):
+                    sql = sql + s + " as " + asColumn[i]
+                else:
+                    sql = sql + s
             if (i == (selectCount -1)):
                 sql = sql + " "
             else :
@@ -70,12 +82,17 @@ class MQTTGroup:
         
         sql = sql + ';'
         
-        
-        frame = pd.read_sql(sql, session.connection())
-        
-        if (not orient in ["split", "records", "index", "values", "table", "columns"]):
-            orient = "split"
-        return frame.to_json( orient=orient)
+        try:
+            frame = pd.read_sql(sql, session.connection())
+            
+            if (not orient in ["split", "records", "index", "values", "table", "columns"]):
+                orient = "split"
+            return frame.to_json( orient=orient)
+
+        except exceptions.SQLAlchemyError as Argument:
+            self.xLogging.exception("Select failed")
+            
+        return "{}"
     
     
     

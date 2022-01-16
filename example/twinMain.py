@@ -20,7 +20,8 @@ logging.basicConfig(level="DEBUG")
 mqttUser="nob"
 mqttPwd="nob"
 mqttTarget="nas3"
-mqttPort=1883
+#mqttPort=1883
+mqttPort=18883
 
 #Setup the twin state
 state = TwinState()
