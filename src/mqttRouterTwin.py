@@ -17,6 +17,7 @@ import json
 from sqlalchemy import exc
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
+from itertools import groupby
 
 class MQTTRouterTwin(MQTTRouter):
     
@@ -314,10 +315,21 @@ class MQTTRouterTwin(MQTTRouter):
     #===========================================================================
     def groupSet(self, grp: str, d: dict, interface: mqtt):
         mGroup = MQTTGroup(grp)
-        targets = mGroup.getGroupTwinIds(self.session)
+        allGroup = mGroup.getGroupTwinIds(self.session)
+        targets=[]
+        reqTargets = d.get("from", [])
+        if (len(reqTargets) == 0):
+            targets = allGroup
+        else:
+            #Validate that target is in group
+            for t in reqTargets:
+                if (t in allGroup):
+                    targets.append(t)
+                else:
+                    self.xLogging.info("Attempted to post to clientId that is not in group %s"%self.session)
         
         for target in targets:
-            self.setTwin(target, d, interface)
+            self.twinSet(target, d, interface)
             
     #===========================================================================
     # Handle a group get request. This will be a query structure

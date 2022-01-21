@@ -58,7 +58,7 @@ class MQTTGroup:
                 sql = sql + '"' + self.name + '" as groupId'
             else:
                 if (len(asColumn) > i):
-                    sql = sql + s + " as " + asColumn[i]
+                    sql = sql + s + " as `" + asColumn[i] +"`"
                 else:
                     sql = sql + s
             if (i == (selectCount -1)):
