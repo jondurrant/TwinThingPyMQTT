@@ -16,6 +16,7 @@ user=os.environ.get("MQTT_USER")
 passwd=os.environ.get("MQTT_PASSWD")
 host= os.environ.get("MQTT_HOST")
 port=int(os.environ.get("MQTT_PORT"))
+mqttCert=os.environ.get("MQTT_CERT", None)
 print("MQTT %s:%d - %s\n"%(host,port, user))
 
 connected_topic = "TNG/" + user + "/LC/ON"
@@ -48,7 +49,7 @@ client.will_set(connected_topic, p, qos=1, retain=False) #set will
 
 
 
-client.tls_set(ca_certs="/opt/orac/RAD2/etc/CA/rootCA.pem")
+client.tls_set(ca_certs=mqttCert)
 
 
 client.connect(host, port, 60)
