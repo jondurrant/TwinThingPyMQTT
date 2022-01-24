@@ -12,13 +12,6 @@ if (len(sys.argv) != 2):
 
 targetId = sys.argv[1]
 
-
-'''    
-host = "nas3"
-port = 8883 #1883
-user = "super"
-passwd = "test"
-'''
 user=os.environ.get("MQTT_USER")
 passwd=os.environ.get("MQTT_PASSWD")
 host= os.environ.get("MQTT_HOST")

@@ -47,11 +47,15 @@ class MQTTAgent(mqtt.Client):
     #===========================================================================
     # Set up the target MQTT Hub to talk to
     #===========================================================================
-    def mqttHub(self, mqttTarget: str, mqttPort: int, recon: bool):
+    def mqttHub(self, mqttTarget: str, mqttPort: int, recon: bool=False, ca_cert: str=None):
         self.xMqttTarget = mqttTarget
         self.xMqttPort = mqttPort
         self.xReconnect = recon
         self.username_pw_set(username=self.xMqttUser, password=self.xMqttPwd)
+        self.ca_cert = ca_cert
+        if (self.ca_cert != None):
+            self.tls_set(ca_certs=self.ca_cert)
+            self.xLogging.debug("Setup TLS cert")
         #self.start()
         
     #===========================================================================

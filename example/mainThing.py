@@ -10,18 +10,26 @@ from mqttRouterState import MQTTRouterState
 from exampleStateRouter import ExampleStateRouter
 from exampleStateObserver import ExampleStateObserver
 import threading
+import os
 
 from twinState import TwinState
 
-logging.basicConfig(level="DEBUG")
+LOGLEVEL = os.environ.get('LOGLEVEL', 'INFO').upper()
+logging.basicConfig(level=LOGLEVEL, 
+                    format= '[%(asctime)s] {%(name)s:%(lineno)d} %(levelname)s - %(message)s')
 
 
 #MQTT Credentials and targets
-mqttUser="nob"
-mqttPwd="nob"
-mqttTarget="nas3"
-#mqttPort=1883
-mqttPort=18883
+#Credentials = needs to look at picking up from network
+mqttUser=os.environ.get("MQTT_USER")
+mqttPwd=os.environ.get("MQTT_PASSWD")
+mqttTarget= os.environ.get("MQTT_HOST")
+mqttPort=int(os.environ.get("MQTT_PORT"))
+mqttCert=os.environ.get("MQTT_CERT", None)
+tls=""
+if (mqttCert != None):
+    tls="TLS"
+print("MQTT %s:%d %s - %s\n"%(mqttTarget,mqttPort,tls,mqttUser))
 
 #Setup the twin state
 state = TwinState()
@@ -35,7 +43,7 @@ state.setState({
 #The MQTT Client Agent
 mqttAgent = MQTTAgent(mqttUser)
 mqttAgent.credentials(mqttUser, mqttPwd)
-mqttAgent.mqttHub(mqttTarget, mqttPort, True)
+mqttAgent.mqttHub(mqttTarget, mqttPort, True, mqttCert)
 
 #Consigure the observers and routers
 mqttObs = MQTTObserver()
