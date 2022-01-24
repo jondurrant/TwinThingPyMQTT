@@ -68,7 +68,7 @@ class MQTTAgent(mqtt.Client):
         j = {'online':0}
         p = json.dumps(j)
         self.will_set(self.xDiconnectedTopic, p, qos=1, retain=False) #set will  
-        self.connect(self.xMqttTarget, self.xMqttPort, 60)
+        self.connect(self.xMqttTarget, self.xMqttPort, keepalive=30)
         
         j = {'online':1}
         p = json.dumps(j)

@@ -140,7 +140,13 @@ def getTwinGroupSet(id: str):
 def getTwinGroupResult(id: str):
     return ("%s/%s/%s/%s"%(MQTT_TOPIC_GROUP_HEADER, id,
                  MQTT_TWIN_TOPIC, MQTT_STATE_TOPIC_RESULT))
-    
+ 
+#============================================================================
+# Check to see if the wild mqtt topic definition matches the specific one
+# wild: str of topic which may include wildcards eg GRP/#
+# fill: specific topic. e.g. GRP/all/TPC/PING
+# returns bool of if match
+#============================================================================
 def topicEquals(wild: str, fill: str):
     w = wild.split("/")
     f = fill.split("/")

@@ -7,8 +7,15 @@
 from mqttGroup import MQTTGroup
 
 class MQTTTwin(MQTTGroup):
+    #===========================================================================
+    # constructor
+    # name: clientId of the thing
+    #===========================================================================
     def __init__(self, name: str):
         self.name = name
         
+    #=======================================================================
+    # Return the clientId of the twin
+    #=======================================================================
     def getGroupTwinIds(self, session):
         return [self.name]

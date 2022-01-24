@@ -58,6 +58,16 @@ class MQTTRouterTwinClient(MQTTRouter):
         
         return False
     
+    #===========================================================================
+    # query all thing twin records in the group.
+    # select: list of column names to bring back. top level is {clientId, reported,
+    #   desired, rejected}. Can also pull back json objects inside using dot notation.
+    #   for example "reported.clock"
+    # asColumn: list of string names of names to rename columns too. Recomended to use
+    # where: dictuary of where clause. Basic clause is of form {'column': "reported.temp", 'op': ">", 'value': 10}
+    #   may also include nested queries in logic {'and': [where, where]} or {'or': [where, where]}
+    # orient: format of responce (pandas format): "split", "records", "index", "values", "table", "columns"
+    #===========================================================================
     def query(self, select: list=["clientId"], asColumns: list=[], where: dict={}, orient: str="split" ):
         query = "%s:%d"%(self.getClientId(), self.xQueryCount)
         self.xQueryCount = self.xQueryCount + 1
@@ -83,6 +93,11 @@ class MQTTRouterTwinClient(MQTTRouter):
             res = self.resultCacheGetRm(query)
         return res
      
+    #===========================================================================
+    # update all things in the group to have the delta
+    # delta: dictionary of kust of state variables to change e.g.{'on': True}
+    # target: list of things to target by clientId. empty list means all of group
+    #===========================================================================
     def update(self, delta: dict = {}, target=[]):   
          
         j = {
@@ -95,11 +110,19 @@ class MQTTRouterTwinClient(MQTTRouter):
         self.xInterface.publish(self.xSet, p, retain=False, qos=1)
         
         
+    #===========================================================================
+    # Result cache handling to covert async call to sync request
+    # Store dictionary under key
+    #===========================================================================
     def resultCacheAdd(self, key: str, d: dict):
         d["touch"]=self.timestampMs()
         with self.xLock:  
             self.xResults[key]=d
             
+    #===========================================================================
+    # Check if result is in cache. If it is return it and drop from the cache
+    # if it isn't in the cache return None
+    #===========================================================================
     def resultCacheGetRm(self, key: str):
         with self.xLock:  
             if key in self.xResults:
@@ -108,6 +131,10 @@ class MQTTRouterTwinClient(MQTTRouter):
                 return res
         return None
     
+    #===========================================================================
+    # Housekeep the cache by removing any older cached queries that where not removed
+    # We may not be the only people asking queries of the thing
+    #===========================================================================
     def resultCacheHousekeeping(self):
         t = self.timestampMs()
         self.xLogging.debug("Cache Size %d"%len(self.xResults))
@@ -129,6 +156,8 @@ class MQTTRouterTwinClient(MQTTRouter):
                 
              
     
-             
+    #==================================================================
+    # Return a timestamp in ms
+    #==================================================================
     def timestampMs(self):
         return time.time_ns()/1000
