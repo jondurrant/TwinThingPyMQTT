@@ -29,7 +29,7 @@ class MQTTGroup:
     def getGroupTwinIds(self, session):
         con = session.connection()
         try: 
-            rs = con.execute('SELECT DISTINCT clientid FROM mqtt_acl where topic = "GRP/%s/#";'%self.name)
+            rs = con.execute('SELECT DISTINCT clientid FROM mqtt_acl where topic = "GRP/%s/TPC/#";'%self.name)
             res = []
             for row in rs:
                 res.append(row[0])

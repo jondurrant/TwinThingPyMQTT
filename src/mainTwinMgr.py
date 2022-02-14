@@ -25,6 +25,7 @@ mqttUser=os.environ.get("MQTT_USER")
 mqttPwd=os.environ.get("MQTT_PASSWD")
 mqttTarget= os.environ.get("MQTT_HOST")
 mqttPort=int(os.environ.get("MQTT_PORT"))
+mqttCert=os.environ.get("MQTT_CERT", None)
 
 logging.info("MQTT %s:%d User:%s"%(mqttTarget, mqttPort, mqttUser))
 
@@ -47,7 +48,7 @@ state.setState({
 #Setup the Client Agent
 mqttAgent = MQTTAgent(mqttUser)
 mqttAgent.credentials(mqttUser, mqttPwd)
-mqttAgent.mqttHub(mqttTarget, mqttPort, True)
+mqttAgent.mqttHub(mqttTarget, mqttPort, True, mqttCert)
 
 #Set up the observers and routers
 mqttObs = MQTTObserver()
