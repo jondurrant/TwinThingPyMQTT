@@ -24,7 +24,7 @@ RUN pip3 install -r /tmp/requirements.txt
 COPY ./src/ /src
 COPY ./libs/ /libs
 
-ENV PYTHONPATH=/src:/libs/twinThing/src
+ENV PYTHONPATH=/src:/libs/twinThing/py
 
 CMD ["python3","/src/mainTwinMgr.py"]
 
