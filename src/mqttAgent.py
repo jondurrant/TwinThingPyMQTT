@@ -9,6 +9,7 @@ import logging
 import mqttTopicHelper as topicHelper
 from mqttObserver import MQTTObserver
 from mqttRouter import MQTTRouter
+from socket import error as socket_error
 
 #===============================================================================
 # MQTT Agent Class
@@ -61,8 +62,8 @@ class MQTTAgent(mqtt.Client):
     #===========================================================================
     # Start task connecting and responding
     #===========================================================================
-    def start(self):
-        self.doConnect()
+    def start(self):     
+        self.doConnect()            
         self.loop_forever()
      
     #===========================================================================
@@ -72,11 +73,23 @@ class MQTTAgent(mqtt.Client):
         j = {'online':0}
         p = json.dumps(j)
         self.will_set(self.xDiconnectedTopic, p, qos=1, retain=False) #set will  
-        self.connect(self.xMqttTarget, self.xMqttPort, keepalive=30)
-        
+        conn=False
+        while not conn:
+            try:
+                self.connect(self.xMqttTarget, self.xMqttPort, keepalive=30)
+                conn=True
+            except socket_error as serr:
+                if (self.xReconnect):
+                    self.xLogging.info("Connection Error - retying")
+                    time.sleep(2)
+                else:
+                    conn=True
+                    self.xLogging.info("Connection Failed")
+                 
         j = {'online':1}
         p = json.dumps(j)
         infot = self.publish(self.xConnectedTopic,p,retain=False,qos=1)
+        self.xLogging.info("MQTT Connection Established")
 
             
     #===========================================================================

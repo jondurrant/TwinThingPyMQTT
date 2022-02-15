@@ -14,8 +14,8 @@ import os
 from twinState import TwinState
 import threading
 
-#Debug level
-logging.basicConfig(level="DEBUG", 
+LOGLEVEL = os.environ.get('LOGLEVEL', 'INFO').upper()
+logging.basicConfig(level=LOGLEVEL, 
                     format= '[%(asctime)s] {%(name)s:%(lineno)d} %(levelname)s - %(message)s')
 
 
