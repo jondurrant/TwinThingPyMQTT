@@ -21,10 +21,10 @@ RUN pip3 install -U pip
 RUN pip3 install -r /tmp/requirements.txt
 
 # copy over our app code
-COPY ./src /src
-copy ./libs /libs
+COPY ./src/ /src
+COPY ./libs/ /libs
 
-ENV PYTHONPATH=/app:/libs
+ENV PYTHONPATH=/src:/libs/twinThing/src
 
-CMD ["python3","mainTwinMgr.py"]
+CMD ["python3","/src/mainTwinMgr.py"]
 
