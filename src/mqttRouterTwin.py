@@ -63,6 +63,7 @@ class MQTTRouterTwin(MQTTRouter):
     #===========================================================================
     def openDb(self):
         try:
+            #self.xLogging.info("DB:" + self.connectStr)
             engine = create_engine(self.connectStr)
             session = sessionmaker()
             session.configure(bind=engine)
@@ -76,7 +77,7 @@ class MQTTRouterTwin(MQTTRouter):
             }
             self.xState.updateState(delta)
         except exc.SQLAlchemyError:
-            self.xLogging.debug("Failed to open DB")
+            self.xLogging.error("Failed to open DB")
             self.session = None
         
    #========================================================================
